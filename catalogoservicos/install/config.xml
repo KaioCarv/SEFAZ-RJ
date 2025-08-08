@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <tabs>
+        <tab name='plugin_catalogoservicos_config' title='Configuração Principal' table='glpi_plugin_catalogoservicos_configs'>
+            <field name='catalog_url' type='url'>
+                URL do Catálogo de Serviços
+            </field>
+            <field name='jwt_secret_key' type='text'>
+                Chave Secreta JWT
+            </field>
+        </tab>
+    </tabs>
+</config>
