@@ -2,12 +2,12 @@
 
 function plugin_version_catalogoservicos() {
     return [
-        'name'           => 'Catalogo',
-        'version'        => '3.0.0',
-        'author'         => 'Fernando de Azambuja Petit',
+        'name'           => 'Catálogo de Serviços',
+        'version'        => '1.0.0',
+        'author'         => 'Kaio Sena',
         'license'        => 'GPLv2+',
         'homepage'       => 'http://10.8.75.86/',
-        'minGlpiVersion' => '10.0'
+        'minGlpiVersion' => '10.0.0'
     ];
 }
 
@@ -15,20 +15,21 @@ function plugin_init_catalogoservicos() {
     global $PLUGIN_HOOKS;
 
     $PLUGIN_HOOKS['csrf_compliant']['catalogoservicos'] = true;
-    $PLUGIN_HOOKS['add_topmenu_item']['catalogoservicos'] = 'plugin_catalogoservicos_add_topmenu_item';
 
-    $autoloader = __DIR__ . '/vendor/autoload.php';
-    if (file_exists($autoloader)) {
-        require_once $autoloader;
-    }
+    // Adiciona entrada no menu de plugins
+    $PLUGIN_HOOKS['menu_toadd']['catalogoservicos'] = [
+        'plugins' => 'catalogoservicos.php'
+    ];
 
-    return true;
+    // Adiciona botão na página principal (dashboard central)
+    $PLUGIN_HOOKS['display_central']['catalogoservicos'] = 'plugin_catalogoservicos_display_central';
 }
 
-function plugin_catalogoservicos_install() {
-    return true;
-}
-
-function plugin_catalogoservicos_uninstall() {
-    return true;
+function plugin_catalogoservicos_display_central() {
+    echo '<div class="center" style="margin-top: 20px; margin-bottom: 20px;">
+            <a class="vsubmit" href="http://localhost:8080/index.php" target="_blank" 
+               style="display: inline-block; margin-bottom: 10px; background-color: #134372ff; color: white;">
+                Acessar Catálogo de Serviços
+            </a>
+          </div>';
 }

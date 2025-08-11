@@ -15,7 +15,6 @@ function plugin_catalogoservicos_add_topmenu_item() {
         $catalog_url_base = 'http://drhel8glpi001v.sefnet.rj:8080/index.php';
 
         $username = Session::getLoginUsername();
-        
         $active_profile = Session::getActiveProfile();
         $profile_name = '';
 
@@ -43,14 +42,17 @@ function plugin_catalogoservicos_add_topmenu_item() {
         $jwt = JWT::encode($payload, $secret_key, 'HS256');
         $catalog_url = $catalog_url_base . '?token=' . $jwt;
 
-        return [
-            'catalogoservicos' => [
-                'label'  => 'Catálogo de Serviços',
-                'url'    => $catalog_url,
-                'icon'   => 'fas fa-book',
-                'target' => '_blank',
-            ]
-        ];
+        // HTML customizado para o botão no cabeçalho
+        echo '<li class="nav-item">
+                <a class="btn btn-outline-primary btn-sm mt-2" 
+                   style="margin-right:10px;" 
+                   target="_blank" 
+                   href="' . $catalog_url . '">
+                   <i class="fas fa-book"></i> Catálogo de Serviços
+                </a>
+              </li>';
+
+        return [];
 
     } catch (Throwable $e) {
         return [];
