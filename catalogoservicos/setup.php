@@ -33,3 +33,14 @@ function plugin_catalogoservicos_display_central() {
             </a>
           </div>';
 }
+
+function plugin_catalogoservicos_install() {
+    // Aqui você pode criar tabelas, campos extras, etc.
+    return true; // true = instalação ok
+}
+
+function plugin_catalogoservicos_uninstall() {
+    // Aqui você pode remover tabelas, campos extras, etc.
+    return true; // true = desinstalação ok
+}
+

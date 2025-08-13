@@ -35,9 +35,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $descricao_completa = "Descrição do usuário: \n\n" . $descricao_usuario;
 
     // --- Configurações da API do GLPI ---
-    $glpi_api_url = "http://localhost:8081/apirest.php/"; //API local para tester. trocar para a API de produção
-    $app_token = "xlydUyzXMGsjVq9xRfDBEqhlW7sCYvGNp9Z7hCyL"; //  App Token (Configuração > API > Adicionar cliente API).
-    $user_token = "XUIfnfBUxY3OIeVUu76upqH55cysnzVIdi49d1r0"; // User Token (Configuração > Usuários > selecione usuário > Aba "Tokens"). 
+    $glpi_api_url = "http://10.8.75.86/apirest.php"; //API local para tester. trocar para a API de produção com a devida permissão
+    $app_token = "FsUkaeKZI2cq6YUMT8SW9bLVxvydJmqXZaXaB7rS"; //  App Token (Configuração > API > Adicionar cliente API).
+    $user_token = "555BLHm9PWT4Rq6Nd1bQ9jrY2RU7j25Lm6EyiEQj"; // User Token (Configuração > Usuários > selecione usuário > Aba "Tokens"). 
     
     $requesttype_id = 1;
     $entity_id = 0;

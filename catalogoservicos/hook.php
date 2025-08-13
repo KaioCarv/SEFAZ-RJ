@@ -42,17 +42,12 @@ function plugin_catalogoservicos_add_topmenu_item() {
         $jwt = JWT::encode($payload, $secret_key, 'HS256');
         $catalog_url = $catalog_url_base . '?token=' . $jwt;
 
-        // HTML customizado para o botão no cabeçalho
-        echo '<li class="nav-item">
-                <a class="btn btn-outline-primary btn-sm mt-2" 
-                   style="margin-right:10px;" 
-                   target="_blank" 
-                   href="' . $catalog_url . '">
-                   <i class="fas fa-book"></i> Catálogo de Serviços
-                </a>
-              </li>';
-
-        return [];
+        // Em vez de dar echo aqui, retornamos um item para o menu
+        return [
+            'title' => __('Catálogo de Serviços', 'catalogoservicos'),
+            'page'  => $catalog_url,
+            'links' => []
+        ];
 
     } catch (Throwable $e) {
         return [];
