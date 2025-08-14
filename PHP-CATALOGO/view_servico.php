@@ -386,7 +386,7 @@ $stmt_sugestoes->close();
                     <button type="submit" class="btn-primary">Criar Chamado</button>
                 </div>
             </form>
-        </div>
+        </div> 
         
         <div class="card">
             <h2 class="section-title">Sugestões de Melhoria</h2>
