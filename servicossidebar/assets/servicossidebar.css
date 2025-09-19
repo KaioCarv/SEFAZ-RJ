@@ -1,0 +1,11 @@
+.servicos-panel { margin-top: 8px; }
+.servicos-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  background: #fff;
+  padding: 10px;
+}
+.servicos-title { font-weight: 600; margin-bottom: 6px; }
+.servico-link { display: block; margin: 4px 0; text-decoration: none; }
+.servico-link:hover { text-decoration: underline; }
+.servico-desc { margin-top: -2px; margin-bottom: 6px; font-size: 12px; opacity: .8; }

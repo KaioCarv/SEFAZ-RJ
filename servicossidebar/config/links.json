@@ -1,0 +1,19 @@
+[
+  {
+    "label": "Restauração de Arquivos/Pastas",
+    "url": "http://localhost/catalogo/restauracao.php",
+    "desc": "Catálogo interno"
+  },
+  {
+    "label": "Criação de Pasta na Rede",
+    "url": "http://localhost/catalogo/pasta_rede.php"
+  },
+  {
+    "label": "Criação de Pasta na Rede",
+    "url": "http://localhost/catalogo/pasta_rede.php"
+  },
+  {
+    "label": "Criação de Pasta na Rede",
+    "url": "http://localhost/catalogo/pasta_rede.php"
+  }
+]

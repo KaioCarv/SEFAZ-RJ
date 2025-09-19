@@ -435,62 +435,159 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
                         </div>
                     <?php endif; ?>
 
-                    <h3>Diretrizes</h3>
-                    <div id="diretrizes">
-                        <?php $index = 0;
-                        foreach ($diretrizes as $diretriz) : ?>
-                            <div class="grupo">
-                                <label>Diretriz <?= $index + 1 ?> - Título:</label>
-                                <textarea name="diretrizes[<?= $index ?>][titulo]" rows="1" maxlength="255" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?= htmlspecialchars($diretriz['titulo']) ?></textarea>
-                                <div id="itens_diretriz_<?= $index ?>">
-                                    <?php foreach ($diretriz['itens'] as $item) : ?><textarea name="diretrizes[<?= $index ?>][itens][]" rows="1" maxlength="1000" oninput="autoResize(this)" placeholder="Item da diretriz" <?= $isReadOnly ? 'readonly' : '' ?>><?= htmlspecialchars($item) ?></textarea><br><?php endforeach; ?>
-                                </div>
-                                <?php if (!$isReadOnly) : ?><button type="button" class="btn-salvar" onclick="adicionarItemDiretriz(<?= $index ?>)">+ Item</button><?php endif; ?>
-                            </div>
-                        <?php $index++;
-                        endforeach; ?>
-                    </div>
-                    <?php if (!$isReadOnly) : ?><button type="button" class="btn-salvar" onclick="adicionarDiretriz()">+ Adicionar Diretriz</button><?php endif; ?>
+
+        <?php
+        // ---------- Helpers para manter compatibilidade com seus arrays atuais ----------
+        $diretrizes_texto = $dados_edicao['diretrizes_texto'] ?? '';
+        if (!$diretrizes_texto && !empty($diretrizes)) {
+            $out = [];
+            foreach ($diretrizes as $d) {
+                $tit = trim($d['titulo'] ?? '');
+                if ($tit !== '') $out[] = "• " . $tit;
+                foreach (($d['itens'] ?? []) as $it) {
+                    $it = trim($it);
+                    if ($it !== '') $out[] = "  - " . $it;
+                }
+            }
+            $diretrizes_texto = implode("\n", $out);
+        }
+
+        $alcadas_padroes_texto = $dados_edicao['alcadas_padroes'] ?? '';
+        if (!$alcadas_padroes_texto) {
+            $al = trim($dados_edicao['alcadas'] ?? '');
+            $pout = [];
+            foreach ($padroes ?? [] as $p) {
+                $pt = trim($p['titulo'] ?? '');
+                if ($pt !== '') $pout[] = "• " . $pt;
+                foreach (($p['itens'] ?? []) as $it) {
+                    $it = trim($it);
+                    if ($it !== '') $pout[] = "  - " . $it;
+                }
+            }
+            $pd = implode("\n", $pout);
+            $alcadas_padroes_texto = trim($al . ($al && $pd ? "\n" : "") . $pd);
+        }
+
+        $checklist_texto = $dados_edicao['checklist_texto'] ?? '';
+        if (!$checklist_texto && !empty($checklist)) {
+            $cl = [];
+            foreach ($checklist as $ch) {
+                $it = trim($ch['item'] ?? '');
+                if ($it !== '') $cl[] = "[ ] " . $it;
+            }
+            $checklist_texto = implode("\n", $cl);
+        }
+        ?>
+
+        <div class="form-column">
+            <h3>Diretrizes</h3>
+            <!-- Agora uma única caixa de texto para colar do Word -->
+            <textarea
+                name="diretrizes_texto"
+                rows="6"
+                maxlength="8000"
+                oninput="autoResize(this)"
+                <?= $isReadOnly ? 'readonly' : '' ?>
+                placeholder="Ex.:&#10;• Diretriz X&#10;  - Item 1&#10;  - Item 2">
+        <?= htmlspecialchars($diretrizes_texto) ?></textarea>
+        </div>
+
+        <div class="form-column">
+            <!-- Alçadas e Padrões unificados em um único campo -->
+            <h3>Alçadas e Padrões</h3>
+            <textarea
+                name="alcadas_padroes"
+                rows="6"
+                maxlength="8000"
+                oninput="autoResize(this)"
+                <?= $isReadOnly ? 'readonly' : '' ?>
+                placeholder="Cole aqui as alçadas e os padrões (um por linha).">
+        <?= htmlspecialchars($alcadas_padroes_texto) ?></textarea>
+
+            <h3>Procedimento de Exceção</h3>
+            <textarea
+                name="procedimento_excecao"
+                maxlength="4000"
+                rows="3"
+                oninput="autoResize(this)"
+                <?= $isReadOnly ? 'readonly' : '' ?>><?=
+                    htmlspecialchars($dados_edicao['procedimento_excecao'] ?? '')
+                ?></textarea>
+           <?php
+// ----- Monta os títulos do checklist a partir do texto (se existir) -----
+            $default_titulos = [
+            'Nomeação lançada em Diário Oficial',
+            'Pedido vindo do superior hierárquico, P.O.s, ou contendo autorização',
+            'Termo de Sigilo assinado',
+            'Anexar Diário Oficial e Termo de Sigilo na abertura de chamado',
+            'E-mail seguindo o padrão de boas práticas (nome.último_sobrenome)',
+            ];
+
+            $checklist_titulos = [];
+            if (!empty($dados_edicao['checklist_texto'])) {
+                foreach (preg_split("/\r\n|\n|\r/", $dados_edicao['checklist_texto']) as $ln) {
+                    $ln = trim(preg_replace('/^\[\s*\]\s*/', '', $ln)); // remove "[ ] " do início, se vier
+                    if ($ln !== '') $checklist_titulos[] = $ln;
+                }
+            } elseif (!empty($checklist)) { // compat: se vier no formato antigo (array)
+                foreach ($checklist as $ch) {
+                    $t = trim($ch['item'] ?? '');
+                    if ($t !== '') $checklist_titulos[] = $t;
+                }
+            }
+            if (!$checklist_titulos) $checklist_titulos = $default_titulos;
+
+            // status salvo anteriormente: 'sim' ou 'nao' por índice
+            $check_status = $dados_edicao['checklist_status'] ?? [];
+            ?>
+
+            <h3>Checklist de Verificação</h3>
+            <div id="checklist" class="checklist-simples">
+            <?php foreach ($checklist_titulos as $i => $titulo):
+                    $st = $check_status[$i] ?? '';
+                    $sim_ck = $st === 'sim' ? 'checked' : '';
+                    $nao_ck = $st === 'nao' ? 'checked' : '';
+            ?>
+                <div class="grupo">
+                <label><?= ($i+1) ?>. <?= htmlspecialchars($titulo) ?>:</label>
+                <div class="check-opcoes">
+                <label class="check-row">
+                <p>Sim, foi executado</p>
+                <input type="checkbox" class="chk-uniq" data-group="chk<?= $i ?>"
+                        name="checklist_status[<?= $i ?>][sim]"
+                        value="sim" <?= $sim_ck ?> disabled>
+                </label>
+
+                <label class="check-row">
+                <p>Não foi devidamente executado</p>
+                <input type="checkbox" class="chk-uniq" data-group="chk<?= $i  ?>"
+                        name="checklist_status[<?= $i ?>][nao]"
+                        value="nao" <?= $nao_ck ?> disabled>
+                </label>
+
                 </div>
+                <!-- Envia também o título junto com o status -->
+                <input type="hidden" name="checklist_status[<?= $i ?>][titulo]" value="<?= htmlspecialchars($titulo) ?>">
+                </div>
+            <?php endforeach; ?>
+            </div>
 
-                <div class="form-column">
-                    <h3>Alçadas</h3>
-                    <textarea name="alcadas" maxlength="1000" rows="1" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['alcadas'] ?? '') ?></textarea>
-                    
-                    <h3>Padrões</h3>
-                    <div id="padroes">
-                        <?php $index = 0;
-                        foreach ($padroes as $padrao) : ?>
-                            <div class="grupo">
-                                <label>Padrão <?= $index + 1 ?> - Título:</label>
-                                <textarea name="padroes[<?= $index ?>][titulo]" rows="1" maxlength="255" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?= htmlspecialchars($padrao['titulo']) ?></textarea>
-                                <div id="itens_padrao_<?= $index ?>">
-                                    <?php foreach ($padrao['itens'] as $item) : ?><textarea name="padroes[<?= $index ?>][itens][]" rows="1" maxlength="1000" oninput="autoResize(this)" placeholder="Item do padrão" <?= $isReadOnly ? 'readonly' : '' ?>><?= htmlspecialchars($item) ?></textarea><br><?php endforeach; ?>
-                                </div>
-                                <?php if (!$isReadOnly) : ?><button type="button" class="btn-salvar" onclick="adicionarItemPadrao(<?= $index ?>)">+ Item</button><?php endif; ?>
-                            </div>
-                        <?php $index++;
-                        endforeach; ?>
-                    </div>
-                    <?php if (!$isReadOnly) : ?><button type="button" class="btn-salvar" onclick="adicionarPadrao()">+ Adicionar Padrão</button><?php endif; ?>
+            <?php if (!$isReadOnly): ?>
+            <script>
+            // Garante seleção exclusiva (apenas um check por item)
+            document.addEventListener('change', function (e) {
+            if (e.target.classList.contains('chk-uniq')) {
+                var group = e.target.getAttribute('data-group');
+                document.querySelectorAll('input.chk-uniq[data-group="' + group + '"]').forEach(function (el) {
+                if (el !== e.target) el.checked = false;
+                });
+            }
+            });
+            </script>
+            <?php endif; ?>
+        </div>
 
-                    <h3>Procedimento de Exceção</h3>
-                    <textarea name="procedimento_excecao" maxlength="1000" rows="1" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['procedimento_excecao'] ?? '') ?></textarea>
-
-                    <h3>Checklist de Verificação</h3>
-                    <div id="checklist">
-                        <?php $index = 0;
-                        foreach ($checklist as $item) : ?>
-                            <div class="grupo">
-                                <label>Item <?= $index + 1 ?>:</label><textarea name="checklist[<?= $index ?>][item]" rows="1" maxlength="255" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?= htmlspecialchars($item['item']) ?></textarea>
-                                <label>Observação <?= $index + 1 ?>:</label><textarea name="checklist[<?= $index ?>][observacao]" rows="1" maxlength="1000" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?= htmlspecialchars($item['observacao']) ?></textarea>
-                            </div>
-                        <?php $index++;
-                        endforeach; ?>
-                    </div>
-                    <?php if (!$isReadOnly) : ?><button type="button" class="btn-salvar" onclick="adicionarChecklist()">+ Adicionar Item</button><?php endif; ?>
-
-                    <h3>Observações Gerais</h3>
+ <h3>Observações Gerais</h3>
                     <textarea name="observacoes_gerais" rows="4" maxlength="1000" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['observacoes'] ?? '') ?></textarea>
                 </div>
             </div>
