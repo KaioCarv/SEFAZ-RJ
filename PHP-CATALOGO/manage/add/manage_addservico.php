@@ -223,28 +223,97 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['acao'])) {
             }
             redirect("../list/manage_listservico.php?sucesso=1");
             break;
-        case 'criar_servico':
-            $stmt = $mysqli->prepare("INSERT INTO servico (versao, Titulo, Descricao, ID_SubCategoria, KBs, UltimaAtualizacao, area_especialista, po_responsavel, alcadas, procedimento_excecao, observacoes, usuario_criador, status_ficha) VALUES ('1.0', ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 'rascunho')");
-            $stmt->bind_param("ssisssssss", $post_data['nome_servico'], $post_data['descricao_servico'], $post_data['id_subcategoria'], $post_data['base_conhecimento'], $post_data['area_especialista'], $post_data['po_responsavel'], $post_data['alcadas'], $post_data['procedimento_excecao'], $post_data['observacoes_gerais'], $nome_usuario_logado);
-            $stmt->execute();
-            $new_id = $stmt->insert_id;
-            $codigo_ficha = "FCH-" . str_pad($new_id, 4, "0", STR_PAD_LEFT);
-            $mysqli->query("UPDATE servico SET codigo_ficha = '$codigo_ficha' WHERE ID = $new_id");
-            sync_related_data($mysqli, $new_id, $post_data['diretrizes'] ?? [], 'diretriz', 'itemdiretriz', 'ID_Servico', 'ID_Diretriz');
-            sync_related_data($mysqli, $new_id, $post_data['padroes'] ?? [], 'padrao', 'itempadrao', 'ID_Servico', 'ID_Padrao');
-            sync_checklist_data($mysqli, $new_id, $post_data['checklist'] ?? []);
-            redirect("../list/manage_listservico.php?sucesso=1");
-            break;
-        case 'salvar_rascunho':
-            $sql = "UPDATE servico SET Titulo = ?, Descricao = ?, ID_SubCategoria = ?, KBs = ?, UltimaAtualizacao = NOW(), area_especialista = ?, po_responsavel = ?, alcadas = ?, procedimento_excecao = ?, observacoes = ?, usuario_criador = ? WHERE ID = ?";
-            $stmt = $mysqli->prepare($sql);
-            $stmt->bind_param("ssisssssssi", $post_data['nome_servico'], $post_data['descricao_servico'], $post_data['id_subcategoria'], $post_data['base_conhecimento'], $post_data['area_especialista'], $post_data['po_responsavel'], $post_data['alcadas'], $post_data['procedimento_excecao'], $post_data['observacoes_gerais'], $nome_usuario_logado, $id_post);
-            $stmt->execute();
-            sync_related_data($mysqli, $id_post, $post_data['diretrizes'] ?? [], 'diretriz', 'itemdiretriz', 'ID_Servico', 'ID_Diretriz');
-            sync_related_data($mysqli, $id_post, $post_data['padroes'] ?? [], 'padrao', 'itempadrao', 'ID_Servico', 'ID_Padrao');
-            sync_checklist_data($mysqli, $id_post, $post_data['checklist'] ?? []);
-            redirect("manage_addservico.php?id=$id_post&sucesso=1");
-            break;
+       case 'criar_servico': {
+    // se vier vazio, manda NULL
+    $checking = $post_data['checking'] ?? null;
+
+    $sql = "
+        INSERT INTO servico (
+            versao, Titulo, Descricao, ID_SubCategoria, KBs, UltimaAtualizacao,
+            area_especialista, po_responsavel, alcadas, procedimento_excecao,
+            observacoes, usuario_criador, status_ficha, checking
+        ) VALUES (
+            '1.0', ?, ?, ?, ?, NOW(),
+            ?, ?, ?, ?, ?,
+            ?, 'rascunho', ?
+        )
+    ";
+    $stmt = $mysqli->prepare($sql);
+    // 11 params: 10 strings + 1 int (ID_SubCategoria)
+    $stmt->bind_param(
+        "ssissssssss",  // ss i s s s s s s s s
+        $post_data['nome_servico'],
+        $post_data['descricao_servico'],
+        $post_data['id_subcategoria'],      // i
+        $post_data['base_conhecimento'],
+        $post_data['area_especialista'],
+        $post_data['po_responsavel'],
+        $post_data['alcadas'],
+        $post_data['procedimento_excecao'],
+        $post_data['observacoes_gerais'],
+        $nome_usuario_logado,               // usuario_criador
+        $checking                           // checking
+    );
+    $stmt->execute();
+
+    $new_id = $stmt->insert_id;
+    $codigo_ficha = "FCH-" . str_pad($new_id, 4, "0", STR_PAD_LEFT);
+    $mysqli->query("UPDATE servico SET codigo_ficha = '$codigo_ficha' WHERE ID = $new_id");
+
+    if (isset($post_data['diretrizes'])) sync_related_data($mysqli, $new_id, $post_data['diretrizes'], 'diretriz', 'itemdiretriz', 'ID_Servico', 'ID_Diretriz');
+    if (isset($post_data['padroes']))    sync_related_data($mysqli, $new_id, $post_data['padroes'], 'padrao', 'itempadrao', 'ID_Servico', 'ID_Padrao');
+    if (isset($post_data['checklist']))  sync_checklist_data($mysqli, $new_id, $post_data['checklist']);
+
+    redirect("../list/manage_listservico.php?sucesso=1");
+    break;
+
+}
+
+   case 'salvar_rascunho': {
+    $checking = $post_data['checking'] ?? null;
+
+    $sql = "
+        UPDATE servico SET
+            Titulo = ?,
+            Descricao = ?,
+            ID_SubCategoria = ?,
+            KBs = ?,
+            UltimaAtualizacao = NOW(),
+            area_especialista = ?,
+            po_responsavel = ?,
+            alcadas = ?,
+            procedimento_excecao = ?,
+            observacoes = ?,
+            usuario_criador = ?,
+            checking = ?
+        WHERE ID = ?
+    ";
+    $stmt = $mysqli->prepare($sql);
+    // 12 params: 10 strings + 2 ints (ID_SubCategoria, ID)
+    $stmt->bind_param(
+        "ssissssssssi", // ss i s s s s s s s s s i
+        $post_data['nome_servico'],
+        $post_data['descricao_servico'],
+        $post_data['id_subcategoria'],       // i
+        $post_data['base_conhecimento'],
+        $post_data['area_especialista'],
+        $post_data['po_responsavel'],
+        $post_data['alcadas'],
+        $post_data['procedimento_excecao'],
+        $post_data['observacoes_gerais'],
+        $nome_usuario_logado,                // usuario_criador
+        $checking,                           // checking
+        $id_post                             // WHERE ID = ?
+    );
+    $stmt->execute();
+
+    if (isset($post_data['diretrizes'])) sync_related_data($mysqli, $id_post, $post_data['diretrizes'], 'diretriz', 'itemdiretriz', 'ID_Servico', 'ID_Diretriz');
+    if (isset($post_data['padroes']))    sync_related_data($mysqli, $id_post, $post_data['padroes'], 'padrao', 'itempadrao', 'ID_Servico', 'ID_Padrao');
+    if (isset($post_data['checklist']))  sync_checklist_data($mysqli, $id_post, $post_data['checklist']);
+
+    redirect("manage_addservico.php?id=$id_post&sucesso=1");
+    break;
+}
         case 'excluir':
             $delete_id = intval($_POST['delete_id']);
             $stmt = $mysqli->prepare("DELETE FROM servico WHERE ID = ?");
@@ -409,7 +478,6 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
             <div class="form-grid">
                 <div class="form-column">
                     <label>Nome do Serviço:<textarea name="nome_servico" maxlength="255" rows="1" required <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['Titulo'] ?? '') ?></textarea></label>
-                    <label>Descrição do Serviço:<textarea name="descricao_servico" maxlength="1000" rows="4" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['Descricao'] ?? '') ?></textarea></label>
                     
                     <h3>Detalhes e Parâmetros</h3>
                     <label>Área Especialista:<textarea name="area_especialista" maxlength="255" rows="1" required <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['area_especialista'] ?? '') ?></textarea></label>
@@ -417,28 +485,30 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
                         <select name="po_responsavel" required <?= $isReadOnly ? 'disabled' : '' ?>>
                             <option value="">Selecione um PO...</option>
                             <?php foreach ($lista_pos as $po) : ?><option value="<?= htmlspecialchars($po['nome']) ?>" <?= (($dados_edicao['po_responsavel'] ?? '') === $po['nome']) ? 'selected' : '' ?>><?= htmlspecialchars($po['nome']) ?></option><?php endforeach; ?>
-                        </select>
-                    </label>
-                     <label>Subcategoria:
-                        <select name="id_subcategoria" required <?= $isReadOnly ? 'disabled' : '' ?>>
-                            <option value="">Selecione uma subcategoria</option>
-                            <?php foreach ($subcategorias as $sub) : ?><option value="<?php echo $sub['ID']; ?>" <?php if (($dados_edicao['ID_SubCategoria'] ?? '') == $sub['ID']) echo 'selected'; ?>><?php echo htmlspecialchars($sub['Titulo']); ?></option><?php endforeach; ?>
-                        </select>
-                    </label>
-                    <label>Base de Conhecimento:<textarea name="base_conhecimento" maxlength="1000" rows="1" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['KBs'] ?? '') ?></textarea></label>
-                    <?php if ($modo_edicao) : ?>
-                        <div class="revisores-container">
-                            <label>Revisores Designados</label>
-                            <div class="checkbox-list">
-                                <?php foreach ($lista_revisores as $revisor) : ?><label class="checkbox-label"><input type="checkbox" name="revisores_ids[]" value="<?= $revisor['ID'] ?>" <?= in_array($revisor['ID'], $revisores_servico) ? 'checked' : '' ?> <?= $isReadOnly || !$podeEnviarRevisao ? 'disabled' : '' ?>> <?= htmlspecialchars($revisor['nome']) ?></label><?php endforeach; ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
+                            </select>
+                        </label>
+                        <label>Subcategoria:
+                            <select name="id_subcategoria" required <?= $isReadOnly ? 'disabled' : '' ?>>
+                                <option value="">Selecione uma subcategoria</option>
+                                <?php foreach ($subcategorias as $sub) : ?><option value="<?php echo $sub['ID']; ?>" <?php if (($dados_edicao['ID_SubCategoria'] ?? '') == $sub['ID']) echo 'selected'; ?>><?php echo htmlspecialchars($sub['Titulo']); ?></option><?php endforeach; ?>
+                                </select>
+                            </label>
+                            <label>Base de Conhecimento:<textarea name="base_conhecimento" maxlength="1000" rows="1" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['KBs'] ?? '') ?></textarea></label>
+                            <?php if ($modo_edicao) : ?>
+                                <div class="revisores-container">
+                                    <label>Revisores Designados</label>
+                                    <div class="checkbox-list">
+                                        <?php foreach ($lista_revisores as $revisor) : ?><label class="checkbox-label"><input type="checkbox" name="revisores_ids[]" value="<?= $revisor['ID'] ?>" <?= in_array($revisor['ID'], $revisores_servico) ? 'checked' : '' ?> <?= $isReadOnly || !$podeEnviarRevisao ? 'disabled' : '' ?>> <?= htmlspecialchars($revisor['nome']) ?></label><?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                    <?php endif; ?>
+                                    <label>Descrição do Serviço:<textarea name="descricao_servico" maxlength="1000" rows="4" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['Descricao'] ?? '') ?></textarea></label>
 
         <?php
+
+        
         // ---------- Helpers para manter compatibilidade com seus arrays atuais ----------
-        $diretrizes_texto = $dados_edicao['diretrizes_texto'] ?? '';
+        $diretrizes_texto = $dados_edicao['alcadas'] ?? '';
         if (!$diretrizes_texto && !empty($diretrizes)) {
             $out = [];
             foreach ($diretrizes as $d) {
@@ -452,22 +522,7 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
             $diretrizes_texto = implode("\n", $out);
         }
 
-        $alcadas_padroes_texto = $dados_edicao['alcadas_padroes'] ?? '';
-        if (!$alcadas_padroes_texto) {
-            $al = trim($dados_edicao['alcadas'] ?? '');
-            $pout = [];
-            foreach ($padroes ?? [] as $p) {
-                $pt = trim($p['titulo'] ?? '');
-                if ($pt !== '') $pout[] = "• " . $pt;
-                foreach (($p['itens'] ?? []) as $it) {
-                    $it = trim($it);
-                    if ($it !== '') $pout[] = "  - " . $it;
-                }
-            }
-            $pd = implode("\n", $pout);
-            $alcadas_padroes_texto = trim($al . ($al && $pd ? "\n" : "") . $pd);
-        }
-
+    
         $checklist_texto = $dados_edicao['checklist_texto'] ?? '';
         if (!$checklist_texto && !empty($checklist)) {
             $cl = [];
@@ -480,31 +535,23 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
         ?>
 
         <div class="form-column">
-            <h3>Diretrizes</h3>
-            <!-- Agora uma única caixa de texto para colar do Word -->
+      <h3>Diretrizes e Procedimentos</h3>
             <textarea
-                name="diretrizes_texto"
-                rows="6"
-                maxlength="8000"
-                oninput="autoResize(this)"
-                <?= $isReadOnly ? 'readonly' : '' ?>
-                placeholder="Ex.:&#10;• Diretriz X&#10;  - Item 1&#10;  - Item 2">
-        <?= htmlspecialchars($diretrizes_texto) ?></textarea>
-        </div>
+            name="alcadas"
+            rows="6"
+            maxlength="8000"
+            oninput="autoResize(this)"
+            <?= $isReadOnly ? 'readonly' : '' ?>
+            placeholder="Ex.:&#10;• Diretriz X&#10;  - Item 1&#10;  - Item 2"><?=
+            htmlspecialchars(ltrim($diretrizes_texto ?? '', "\r\n\t "))
+            ?></textarea>
 
+        
+        </div>
         <div class="form-column">
             <!-- Alçadas e Padrões unificados em um único campo -->
-            <h3>Alçadas e Padrões</h3>
-            <textarea
-                name="alcadas_padroes"
-                rows="6"
-                maxlength="8000"
-                oninput="autoResize(this)"
-                <?= $isReadOnly ? 'readonly' : '' ?>
-                placeholder="Cole aqui as alçadas e os padrões (um por linha).">
-        <?= htmlspecialchars($alcadas_padroes_texto) ?></textarea>
-
-            <h3>Procedimento de Exceção</h3>
+    
+            <h3>Procedimento de Exceção e Conhecimento Técnico</h3>
             <textarea
                 name="procedimento_excecao"
                 maxlength="4000"
@@ -513,66 +560,40 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
                 <?= $isReadOnly ? 'readonly' : '' ?>><?=
                     htmlspecialchars($dados_edicao['procedimento_excecao'] ?? '')
                 ?></textarea>
-           <?php
-// ----- Monta os títulos do checklist a partir do texto (se existir) -----
-            $default_titulos = [
-            'Nomeação lançada em Diário Oficial',
-            'Pedido vindo do superior hierárquico, P.O.s, ou contendo autorização',
-            'Termo de Sigilo assinado',
-            'Anexar Diário Oficial e Termo de Sigilo na abertura de chamado',
-            'E-mail seguindo o padrão de boas práticas (nome.último_sobrenome)',
-            ];
+           <?php?>
 
-            $checklist_titulos = [];
-            if (!empty($dados_edicao['checklist_texto'])) {
-                foreach (preg_split("/\r\n|\n|\r/", $dados_edicao['checklist_texto']) as $ln) {
-                    $ln = trim(preg_replace('/^\[\s*\]\s*/', '', $ln)); // remove "[ ] " do início, se vier
-                    if ($ln !== '') $checklist_titulos[] = $ln;
-                }
-            } elseif (!empty($checklist)) { // compat: se vier no formato antigo (array)
-                foreach ($checklist as $ch) {
-                    $t = trim($ch['item'] ?? '');
-                    if ($t !== '') $checklist_titulos[] = $t;
-                }
-            }
-            if (!$checklist_titulos) $checklist_titulos = $default_titulos;
+                <h3>Checklist de Verificação</h3>
 
-            // status salvo anteriormente: 'sim' ou 'nao' por índice
-            $check_status = $dados_edicao['checklist_status'] ?? [];
-            ?>
 
-            <h3>Checklist de Verificação</h3>
-            <div id="checklist" class="checklist-simples">
-            <?php foreach ($checklist_titulos as $i => $titulo):
-                    $st = $check_status[$i] ?? '';
-                    $sim_ck = $st === 'sim' ? 'checked' : '';
-                    $nao_ck = $st === 'nao' ? 'checked' : '';
-            ?>
-                <div class="grupo">
-                <label><?= ($i+1) ?>. <?= htmlspecialchars($titulo) ?>:</label>
-                <div class="check-opcoes">
-                <label class="check-row">
-                <p>Sim, foi executado</p>
-                <input type="checkbox" class="chk-uniq" data-group="chk<?= $i ?>"
-                        name="checklist_status[<?= $i ?>][sim]"
-                        value="sim" <?= $sim_ck ?> disabled>
-                </label>
+                 <textarea
+                        name="checking"
+                        maxlength="4000"
+                        rows="3"
+                        oninput="autoResize(this)"
+                        <?= $isReadOnly ? 'readonly' : '' ?>><?=
+                            htmlspecialchars($dados_edicao['checking'] ?? '')
+                ?></textarea>
 
-                <label class="check-row">
-                <p>Não foi devidamente executado</p>
-                <input type="checkbox" class="chk-uniq" data-group="chk<?= $i  ?>"
-                        name="checklist_status[<?= $i ?>][nao]"
-                        value="nao" <?= $nao_ck ?> disabled>
-                </label>
+                <?php
+                // Texto fixo do checklist (somente leitura) 
+                $default_titulos = [
+                'Nomeação lançada em Diário Oficial',
+                'Pedido vindo do superior hierárquico, P.O.s, ou contendo autorização',
+                'Termo de Sigilo assinado',
+                'Anexar Diário Oficial e Termo de Sigilo na abertura de chamado',
+                'E-mail seguindo o padrão de boas práticas (nome.último_sobrenome)',
+                ];
+                ?>
 
+                <div class="grupo checklist-readonly">
+                <ol class="checklist-ol">
+                    <?php foreach ($default_titulos as $t): ?>
+                    <li><?= htmlspecialchars($t) ?></li>
+                    <?php endforeach; ?>
+                </ol>
                 </div>
-                <!-- Envia também o título junto com o status -->
-                <input type="hidden" name="checklist_status[<?= $i ?>][titulo]" value="<?= htmlspecialchars($titulo) ?>">
-                </div>
-            <?php endforeach; ?>
-            </div>
 
-            <?php if (!$isReadOnly): ?>
+            <?php if (!$isReadOnly): ?> 
             <script>
             // Garante seleção exclusiva (apenas um check por item)
             document.addEventListener('change', function (e) {
@@ -585,7 +606,7 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
             });
             </script>
             <?php endif; ?>
-        </div>
+        </div> 
 
  <h3>Observações Gerais</h3>
                     <textarea name="observacoes_gerais" rows="4" maxlength="1000" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['observacoes'] ?? '') ?></textarea>
@@ -626,5 +647,6 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
     </div>
     <script src="../../js/addservico.js"></script>
 </body>
-
+ 
 </html>
+ 

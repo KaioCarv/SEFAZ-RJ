@@ -46,6 +46,7 @@ CREATE TABLE `servico` (
   CONSTRAINT `fk_servico_subcategoria` FOREIGN KEY (`ID_SubCategoria`) REFERENCES `subcategoria` (`ID`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=261 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 DROP TABLE IF EXISTS `checklist`;
 CREATE TABLE `checklist` (
   `ID` int NOT NULL AUTO_INCREMENT,
