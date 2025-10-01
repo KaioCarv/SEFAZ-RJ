@@ -572,41 +572,7 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
                         oninput="autoResize(this)"
                         <?= $isReadOnly ? 'readonly' : '' ?>><?=
                             htmlspecialchars($dados_edicao['checking'] ?? '')
-                ?></textarea>
-
-                <?php
-                // Texto fixo do checklist (somente leitura) 
-                $default_titulos = [
-                'Nomeação lançada em Diário Oficial',
-                'Pedido vindo do superior hierárquico, P.O.s, ou contendo autorização',
-                'Termo de Sigilo assinado',
-                'Anexar Diário Oficial e Termo de Sigilo na abertura de chamado',
-                'E-mail seguindo o padrão de boas práticas (nome.último_sobrenome)',
-                ];
-                ?>
-
-                <div class="grupo checklist-readonly">
-                <ol class="checklist-ol">
-                    <?php foreach ($default_titulos as $t): ?>
-                    <li><?= htmlspecialchars($t) ?></li>
-                    <?php endforeach; ?>
-                </ol>
-                </div>
-
-            <?php if (!$isReadOnly): ?> 
-            <script>
-            // Garante seleção exclusiva (apenas um check por item)
-            document.addEventListener('change', function (e) {
-            if (e.target.classList.contains('chk-uniq')) {
-                var group = e.target.getAttribute('data-group');
-                document.querySelectorAll('input.chk-uniq[data-group="' + group + '"]').forEach(function (el) {
-                if (el !== e.target) el.checked = false;
-                });
-            }
-            });
-            </script>
-            <?php endif; ?>
-        </div> 
+                ?></textarea>    
 
  <h3>Observações Gerais</h3>
                     <textarea name="observacoes_gerais" rows="4" maxlength="1000" oninput="autoResize(this)" <?= $isReadOnly ? 'readonly' : '' ?>><?php echo htmlspecialchars($dados_edicao['observacoes'] ?? '') ?></textarea>
