@@ -9,7 +9,7 @@ if ($mysqli->connect_errno) {
 
 // Obtém o ID da subcategoria da URL. Se não for fornecido, o padrão é 0.
 $id_subcategoria = $_GET['id'] ?? 0;
-
+ 
 // --- Busca dos Detalhes da Subcategoria Ativa ---
 $categoria_pai_id = 0; // Inicializa o ID da categoria pai.
 // Prepara uma consulta para buscar os detalhes da subcategoria atual.
@@ -42,18 +42,54 @@ while ($cat = $result_all_cats->fetch_assoc()) {
     $categorias[] = $cat;
 }
 
+
+
+
 // --- Busca dos Serviços da Subcategoria Ativa ---
+
+
+// ID da subcategoria ativa vindo da URL
 $servicos = [];
-// Prepara uma consulta para buscar todos os serviços publicados que pertencem à subcategoria atual.
-$stmt_servicos = $mysqli->prepare("SELECT ID, Titulo, Descricao, KBs FROM servico WHERE ID_SubCategoria = ? AND status_ficha = 'publicado'");
-$stmt_servicos->bind_param("i", $id_subcategoria);
-$stmt_servicos->execute();
-$result_servicos = $stmt_servicos->get_result();
-while ($row = $result_servicos->fetch_assoc()) {
+
+$mostrar_rascunho_e_revisao = true; // ← coloque false depois do teste
+
+$whereStatus = $mostrar_rascunho_e_revisao
+  ? "COALESCE(UPPER(TRIM(s.status_ficha)),'') IN ('PUBLICADO','RASCUNHO','EM_REVISAO')"
+  : "UPPER(TRIM(s.status_ficha)) = 'PUBLICADO'";
+
+$sql = "
+  SELECT
+      s.ID, s.Titulo, s.Descricao, s.KBs,
+      UPPER(TRIM(s.status_ficha)) AS status_norm
+  FROM servico s
+  INNER JOIN subcategoria sc ON sc.ID = s.ID_SubCategoria
+  WHERE sc.ID = ?            -- só a subcategoria ativa
+    AND $whereStatus
+  ORDER BY
+      CASE
+        WHEN UPPER(TRIM(s.status_ficha)) = 'PUBLICADO' THEN 1
+        WHEN UPPER(TRIM(s.status_ficha)) = 'EM_REVISAO' THEN 2
+        WHEN UPPER(TRIM(s.status_ficha)) = 'RASCUNHO'  THEN 3
+        ELSE 4
+      END,
+      s.Titulo
+";
+
+$stmt = $mysqli->prepare($sql);
+$stmt->bind_param("i", $id_subcategoria);
+$stmt->execute();
+$result = $stmt->get_result();
+while ($row = $result->fetch_assoc()) {
     $servicos[] = $row;
 }
-$stmt_servicos->close();
+$stmt->close();
+
+
 ?>
+
+
+
+
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -111,7 +147,7 @@ $stmt_servicos->close();
             <h1><?php echo htmlspecialchars($subtitulo ?? 'Subcategoria não encontrada'); ?></h1>
             <p><?php echo htmlspecialchars($subdescricao ?? ''); ?></p>
 
-            <!-- Lista os serviços pertencentes a esta subcategoria. -->
+            <!-- Lista os serviços pertencentes a esta subcategoria. --> 
             <div class="cards-list-sub">
                 <?php foreach ($servicos as $serv): ?>
                     <a href="view_servico.php?id=<?php echo $serv['ID']; ?>" class="service-card">

@@ -560,7 +560,7 @@ $isReadOnly = in_array($status, ['publicado', 'cancelada', 'substituida', 'desco
                 <?= $isReadOnly ? 'readonly' : '' ?>><?=
                     htmlspecialchars($dados_edicao['procedimento_excecao'] ?? '')
                 ?></textarea>
-           <?php?>
+
 
                 <h3>Checklist de Verificação</h3>
 
